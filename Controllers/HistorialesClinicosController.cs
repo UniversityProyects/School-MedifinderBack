@@ -138,6 +138,7 @@ namespace MediFinder_Backend.Controllers
                 }
 
                 //Verificar que el medico tenga asignado el paciente
+                /*
                 var medicoAsignado = await _baseDatos.PacientesAsignados
                     .FirstOrDefaultAsync(pa => pa.IdPaciente == idPaciente && pa.IdMedico == checarHistorialDTO.IdMedico && pa.Estatus != "0");
 
@@ -145,7 +146,7 @@ namespace MediFinder_Backend.Controllers
                 {
                     return Unauthorized($"No tiene el permiso para visualizar el historial del paciente.");
                 }
-
+                */
                 //Validar que el Id del paciente recibido si existe en la BD
                 var existePaciente = await _baseDatos.Paciente.FirstOrDefaultAsync(e => e.Id == idPaciente);
                 if (existePaciente == null)

@@ -28,7 +28,7 @@ namespace MediFinder_Backend.ModelosEspeciales
             public string Num_Cedula { get; set; }
             public decimal Honorarios { get; set; }
         }
-
+        /*
         public class RegistrarHorasDTO
         {
             public int IdMedico { get; set; }  
@@ -36,7 +36,7 @@ namespace MediFinder_Backend.ModelosEspeciales
             public string HoraInicio { get; set; }
             public string HoraFin { get; set; }  
         }
-
+        */
 
         public class LoginDTO
         {
@@ -46,5 +46,21 @@ namespace MediFinder_Backend.ModelosEspeciales
             [Required(ErrorMessage = "El campo Contraseña es requerido")]
             public string Contrasena { get; set; }
         }
+
+        public class RegistrarHorasDTO
+        {
+            public int IdMedico { get; set; }
+            public List<DiaSeleccionadoDTO> DiasSeleccionados { get; set; }
+            public string HoraInicio { get; set; }
+            public string HoraFin { get; set; }
+        }
+
+        public class DiaSeleccionadoDTO
+        {
+            public int Id { get; set; }
+            public string Dia { get; set; }
+        }
+
+
     }
 }

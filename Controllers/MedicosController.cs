@@ -3,6 +3,7 @@ using MediFinder_Backend.ModelosEspeciales;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using static MediFinder_Backend.ModelosEspeciales.RegistrarMedico;
+using static MediFinder_Backend.ModelosEspeciales.RegistrarAdministrador;
 
 namespace MediFinder_Backend.Controllers
 {
@@ -97,6 +98,7 @@ namespace MediFinder_Backend.Controllers
             }
         }
 
+
         // Verificar Login Médico -----------------------------------------------------------------------------------------------------------
 
         [HttpPost]
@@ -124,11 +126,10 @@ namespace MediFinder_Backend.Controllers
                 {
                     case 1: // Nuevo/Sin Validar
                         return BadRequest("El usuario está pendiente de validación.");
-                    case 2: // Activo/Validado
-                        return BadRequest("El usuario está pendiente de pago de suscripción.");
-                    case 3: // Activo/Pago Realizado
-                        var medicoDTO = new
+                    case 2: // Activo/Validado0
+                        var medicoPagoDTO = new
                         {
+                            Id = medico.Id,
                             NombreCompleto = $"{medico.Nombre} {medico.Apellido}",
                             Especialidades = medico.EspecialidadMedicoIntermedia.Select(em => new
                             {
@@ -136,7 +137,23 @@ namespace MediFinder_Backend.Controllers
                                 Honorarios = em.Honorarios
                             }),
                             Direccion = $"{medico.Calle}, {medico.Colonia}, {medico.Numero}, {medico.Ciudad}, {medico.Pais}, {medico.CodigoPostal}",
-                            Telefono = medico.Telefono
+                            Telefono = medico.Telefono,
+                            Estatus = medico.Estatus
+                        };
+                        return Ok(medicoPagoDTO);
+                    case 3: // Activo/Pago Realizado
+                        var medicoDTO = new
+                        {
+                            Id = medico.Id,
+                            NombreCompleto = $"{medico.Nombre} {medico.Apellido}",
+                            Especialidades = medico.EspecialidadMedicoIntermedia.Select(em => new
+                            {
+                                Especialidad = em.IdEspecialidadNavigation.Nombre,
+                                Honorarios = em.Honorarios
+                            }),
+                            Direccion = $"{medico.Calle}, {medico.Colonia}, {medico.Numero}, {medico.Ciudad}, {medico.Pais}, {medico.CodigoPostal}",
+                            Telefono = medico.Telefono,
+                            Estatis = medico.Estatus
                         };
                         return Ok(medicoDTO);
                     case 4: // Inactivo
@@ -150,7 +167,6 @@ namespace MediFinder_Backend.Controllers
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
-
 
 
         // Modificar Médico y Especialidades -------------------------------------------------------------------------------------------------
@@ -402,7 +418,7 @@ namespace MediFinder_Backend.Controllers
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
-
+        /*
         [HttpPost]
         [Route("RegistrarHorasTrabajo")]
         public async Task<IActionResult> RegistrarHorasTrabajo([FromBody] RegistrarHorasDTO registrarHorasDTO)
@@ -463,6 +479,82 @@ namespace MediFinder_Backend.Controllers
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
+        */
+
+        [HttpPost]
+        [Route("RegistrarHorasTrabajo")]
+        public async Task<IActionResult> RegistrarHorasTrabajo([FromBody] RegistrarHorasDTO registrarHorasDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                // Validar si el médico existe
+                var medicoExistente = await _baseDatos.Medicos.FindAsync(registrarHorasDTO.IdMedico);
+                if (medicoExistente == null)
+                {
+                    return NotFound("El médico especificado no existe.");
+                }
+
+                // Convertir cadenas a TimeOnly
+                if (!TimeOnly.TryParse(registrarHorasDTO.HoraInicio, out var horaInicio) ||
+                    !TimeOnly.TryParse(registrarHorasDTO.HoraFin, out var horaFin))
+                {
+                    return BadRequest("Formato de hora inválido.");
+                }
+
+                // Recorrer los días seleccionados
+                foreach (var diaSeleccionado in registrarHorasDTO.DiasSeleccionados)
+                {
+                    // Crear lapsos de una hora entre la hora de inicio y la hora de fin
+                    for (var horaActual = horaInicio; horaActual < horaFin; horaActual = horaActual.AddHours(1))
+                    {
+                        var horaFinLapsus = horaActual.AddHours(1);
+
+                        // Buscar un registro existente con el mismo IdMedico, Dia, HoraInicio y HoraFin
+                        var horarioExistente = await _baseDatos.Horarios
+                            .FirstOrDefaultAsync(h => h.IdMedico == registrarHorasDTO.IdMedico
+                                                      && h.Dia == diaSeleccionado.Id
+                                                      && h.HoraInicio == horaActual
+                                                      && h.HoraFin == horaFinLapsus);
+
+                        if (horarioExistente != null)
+                        {
+                            // Actualizar el registro existente
+                            horarioExistente.HoraInicio = horaActual;
+                            horarioExistente.HoraFin = horaFinLapsus;
+
+                            _baseDatos.Horarios.Update(horarioExistente);
+                        }
+                        else
+                        {
+                            // Registrar la nueva hora de trabajo
+                            var nuevoHorario = new Horario
+                            {
+                                IdMedico = registrarHorasDTO.IdMedico,
+                                Dia = diaSeleccionado.Id,
+                                HoraInicio = horaActual,
+                                HoraFin = horaFinLapsus
+                            };
+
+                            _baseDatos.Horarios.Add(nuevoHorario);
+                        }
+                    }
+                }
+
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new { message = "Horas de trabajo registradas correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
+
 
         // Obtener detalles medico---------------------------------------------------------------------------------------------
         [HttpGet]
@@ -560,7 +652,31 @@ namespace MediFinder_Backend.Controllers
         }
 
 
+        // Autorizar Solicitud -----------------------------------------------------------------------------------------------------------
+        [HttpPut]
+        [Route("AutorizarSolicitud/{id}/{estatus}")]
+        public async Task<IActionResult> AutorizarSolicitud(int id, string estatus)
+        {
+            try
+            {
+                var medico = await _baseDatos.Medicos.FirstOrDefaultAsync(m => m.Id == id);
 
+                if (medico == null)
+                {
+                    return NotFound($"No se encontró un médico con el ID {id}.");
+                }
+
+                medico.Estatus = estatus;
+
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new { message = "Médico autorizado correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
 
     }
 }

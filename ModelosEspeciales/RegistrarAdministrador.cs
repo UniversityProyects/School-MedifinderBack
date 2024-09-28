@@ -1,4 +1,6 @@
-﻿namespace MediFinder_Backend.ModelosEspeciales
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MediFinder_Backend.ModelosEspeciales
 {
     public class RegistrarAdministrador
     {
@@ -28,6 +30,15 @@
         {
             public string? ContrasenaActual { get; set; }
             public string? NuevaContrasena { get; set; }
+        }
+
+        public class LoginAdmonDTO
+        {
+            [Required(ErrorMessage = "El campo Email es requerido")]
+            public string Email { get; set; }
+
+            [Required(ErrorMessage = "El campo Contraseña es requerido")]
+            public string Contrasena { get; set; }
         }
     }
 }

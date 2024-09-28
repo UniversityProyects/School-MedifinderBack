@@ -72,7 +72,7 @@ namespace MediFinder_Backend.Controllers
 
                 if (paciente == null)
                 {
-                    return Unauthorized(new { message = "Correo electrónico o contraseña incorrectos." });
+                    return NotFound("Correo electrónico o contraseña incorrectos.");
                 }
 
                 var pacienteDTO = new
@@ -84,6 +84,45 @@ namespace MediFinder_Backend.Controllers
                     FechaNacimiento = paciente.FechaNacimiento?.ToString("yyyy-MM-dd"),
                     Sexo = paciente.Sexo,
                     Estatus = paciente.Estatus
+                };
+
+                return Ok(pacienteDTO);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
+
+        [HttpPost]
+        [Route("LoginWear")]
+        public async Task<IActionResult> LoginWear([FromBody] LoginPDTO loginDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var paciente = await _baseDatos.Paciente
+                    .FirstOrDefaultAsync(p => p.Email == loginDTO.Email && p.Contrasena == loginDTO.Contrasena);
+
+                if (paciente == null)
+                {
+                    return NotFound("Correo electrónico o contraseña incorrectos.");
+                }
+
+                var pacienteDTO = new
+                {
+                    id = paciente.Id,
+                    NombreCompleto = $"{paciente.Nombre} {paciente.Apellido}",
+                    Email = paciente.Email,
+                    Telefono = paciente.Telefono,
+                    FechaNacimiento = paciente.FechaNacimiento?.ToString("yyyy-MM-dd"),
+                    Sexo = paciente.Sexo,
+                    Estatus = paciente.Estatus,
+                    Contrasena = loginDTO.Contrasena
                 };
 
                 return Ok(pacienteDTO);

@@ -156,6 +156,60 @@ namespace MediFinder_Backend.Controllers
 
         //Obtener listado de citas por paciente --------------------------------------------------------
         [HttpGet]
+        [Route("ObtenerCitasPacientesWear/{idPaciente}")]
+        public async Task<IActionResult> ObtenerCitasPacientesWear(int idPaciente)
+        {
+            try
+            {
+                //Validar que el id del paciente recibido exista en la BD
+                var existePaciente = await _baseDatos.Paciente.FirstOrDefaultAsync(e => e.Id == idPaciente);
+                if (existePaciente == null)
+                {
+                    return NotFound($"El paciente ingresado no existe.");
+                }
+
+                //Consultamos las listas y formateamos estructura de respuesta
+                var listaAgrupada = await _baseDatos.Cita
+                    .Where(c => c.IdPaciente == idPaciente)
+                    .Include(c => c.IdPacienteNavigation)
+                    .Include(c => c.IdMedicoNavigation)
+                    .GroupBy(c => new { c.IdPaciente, c.IdPacienteNavigation.Nombre, c.IdPacienteNavigation.Apellido })
+                    .Select(g => new
+                    {
+                        IdPaciente = g.Key.IdPaciente,
+                        NombrePaciente = g.Key.Nombre,
+                        ApellidoPaciente = g.Key.Apellido,
+                        Citas = g.Select(c => new
+                        {
+                            c.Id,
+                            c.IdMedico,
+                            c.FechaInicio,
+                            c.FechaFin,
+                            c.Descripcion,
+                            c.Estatus,
+                            c.FechaCancelacion,
+                            c.MotivoCancelacion,
+                            NombreMedico = c.IdMedicoNavigation.Nombre,
+                            ApellidoMedico = c.IdMedicoNavigation.Apellido,
+                            DireccionMedico = string.Join(" ",
+                                c.IdMedicoNavigation.Calle,
+                                c.IdMedicoNavigation.Colonia,
+                                c.IdMedicoNavigation.Ciudad,
+                                c.IdMedicoNavigation.CodigoPostal)
+                        }).ToList()
+                    }).ToListAsync();
+
+
+                return Ok(listaAgrupada);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
+        //Obtener listado de citas por paciente --------------------------------------------------------
+        [HttpGet]
         [Route("ObtenerCitasPacientes/{idPaciente}")]
         public async Task<IActionResult> ObtenerCitasPacientes(int idPaciente)
         {
@@ -213,7 +267,6 @@ namespace MediFinder_Backend.Controllers
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
-
         
         // Obtener listado de citas por paciente y estatus de cita --------------------------------------------------------
         [HttpGet]
@@ -275,7 +328,6 @@ namespace MediFinder_Backend.Controllers
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
-
 
         //Obtener listado de citas por medico --------------------------------------------------------
         [HttpGet]
@@ -548,6 +600,47 @@ namespace MediFinder_Backend.Controllers
                 //retornamos mensaje de confirmacion
                 return Ok(new { message = $"Cita cancelada con éxito." });
 
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
+
+        //Terminar cita por medico --------------------------------------------------------
+        [HttpPut]
+        [Route("TerminarCitaMedico/{id}")]
+        public async Task<IActionResult> TerminarCitaMedico(int id)
+        {
+            try
+            {
+                // Validar que el Id de la cita recibido sí existe en la BD
+                var existeCita = await _baseDatos.Cita.FirstOrDefaultAsync(e => e.Id == id);
+                if (existeCita == null)
+                {
+                    return NotFound($"No existe ningún registro de la cita con el Id {id}.");
+                }
+
+                // Validar que la cita no esté cancelada por el paciente o por el médico
+                if (existeCita.Estatus == "4" || existeCita.Estatus == "3")
+                {
+                    return BadRequest($"No se puede finalizar la cita porque ya está cancelada.");
+                }
+
+                // Validar que la cita no se haya finalizado ya
+                if (existeCita.Estatus == "5")
+                {
+                    return BadRequest($"No se puede finalizar la cita porque ya tiene un estatus de terminada.");
+                }
+
+                // Cambiar el estatus a terminada
+                existeCita.Estatus = "5";
+
+                // Guardar la información nueva
+                await _baseDatos.SaveChangesAsync();
+
+                // Retornar mensaje de confirmación
+                return Ok(new { message = $"Cita terminada con éxito." });
             }
             catch (Exception ex)
             {

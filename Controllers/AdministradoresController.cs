@@ -61,6 +61,42 @@ namespace MediFinder_Backend.Controllers
             }
         }
 
+        // Verificar Login Administrador -----------------------------------------------------------------------------------------------------------
+        [HttpPost]
+        [Route("Login")]
+        public async Task<IActionResult> IniciarSesion([FromBody] LoginAdmonDTO loginAdmonDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                // Busca el administrador por correo electrónico y contraseña
+                var administrador = await _baseDatos.Administrador
+                    .FirstOrDefaultAsync(a => a.Email == loginAdmonDTO.Email && a.Contrasena == loginAdmonDTO.Contrasena);
+
+                if (administrador == null)
+                {
+                    return Unauthorized("Credenciales incorrectas. Por favor, verifique su correo electrónico y contraseña.");
+                }
+
+                // Retornar los datos necesarios para el almacenamiento en localStorage
+                return Ok(new
+                {
+                    email = administrador.Email,
+                    nombreCompleto = $"{administrador.Nombre} {administrador.Apellido}",
+                    id = administrador.Id,
+                    estatus = administrador.Estatus
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
+
         //Modificar informacion administrador ----------------------------------------
         [HttpPut]
         [Route("Modificar/{id}")]
