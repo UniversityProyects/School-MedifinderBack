@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\MediFinder_Backend.props" />
+</Project>

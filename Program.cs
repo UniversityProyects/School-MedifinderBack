@@ -36,5 +36,9 @@ app.UseCors("NuevaPolitica");
 app.UseAuthorization();
 app.MapControllers();
 
-var host = "http://localhost:5257";
-app.Run(host);
+//var host = "http://192.168.100.171:5257";
+//var hostCris = "http://192.168.100.37:5257";
+//var host = "http://10.16.24.162:5257";
+
+//app.Run(host);
+app.Run();
