@@ -85,6 +85,7 @@ namespace MediFinder_Backend.Controllers
                 // Retornar los datos necesarios para el almacenamiento en localStorage
                 return Ok(new
                 {
+                    success = true,
                     email = administrador.Email,
                     nombreCompleto = $"{administrador.Nombre} {administrador.Apellido}",
                     id = administrador.Id,
