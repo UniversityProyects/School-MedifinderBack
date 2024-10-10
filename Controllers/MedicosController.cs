@@ -310,7 +310,65 @@ namespace MediFinder_Backend.Controllers
             }
         }
 
-        // Obtener Lista de Médicos por Especialidad ---------------------------------------------------------------------------------------
+        // Obtener Lista de Médicos Registrados ---------------------------------------------------------------------------------------
+        [HttpGet]
+        [Route("ObtenerMedicosListado")]
+        public async Task<IActionResult> ObtenerMedicosListado()
+        {
+            try
+            {
+                var listaMedicos = await _baseDatos.Medicos
+                    .Include(m => m.EspecialidadMedicoIntermedia)
+                    .ThenInclude(em => em.IdEspecialidadNavigation)
+                    .ToListAsync();
+
+                var listaMedicosDTO = listaMedicos.SelectMany(m =>
+                    m.EspecialidadMedicoIntermedia.Select(em => new
+                    {
+                        m.Id,
+                        m.Nombre,
+                        m.Apellido,
+                        m.Email,
+                        m.Telefono,
+                        m.Calle,
+                        m.Colonia,
+                        m.Numero,
+                        m.Ciudad,
+                        m.Pais,
+                        m.CodigoPostal,
+                        m.Estatus,
+                        FechaRegistro = m.FechaRegistro?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        Especialidades = new
+                        {
+                            em.IdEspecialidad,
+                            em.NumCedula,
+                            em.Honorarios,
+                            Especialidad = em.IdEspecialidadNavigation?.Nombre
+                        }
+                    })
+                );
+
+                var response = new
+                {
+                    mensaje = "Médicos obtenidos con éxito.",
+                    estatus = "success",
+                    data = listaMedicosDTO
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                var errorResponse = new
+                {
+                    mensaje = $"Error interno del servidor: {ex.Message}",
+                    estatus = "error",
+                    data = (object)null
+                };
+
+                return StatusCode(500, errorResponse);
+            }
+        }
 
         [HttpGet]
         [Route("ObtenerMedicosPorEspecialidad/{nombreEspecialidad}")]
@@ -324,35 +382,50 @@ namespace MediFinder_Backend.Controllers
                     .ThenInclude(em => em.IdEspecialidadNavigation)
                     .ToListAsync();
 
-                // Filtrar los médicos cuya especialidad contenga parcialmente el nombreEspecialidad
-                var medicosFiltrados = listaMedicos.Where(m =>
-                    m.EspecialidadMedicoIntermedia.Any(em =>
-                        em.IdEspecialidadNavigation.Nombre.ToLower().Contains(nombreEspecialidad.ToLower())
-                    )
-                ).ToList();
+                // Mapear la lista de médicos a un formato DTO, incluyendo especialidades
+                var listaMedicosDTO = listaMedicos.SelectMany(m =>
+                    m.EspecialidadMedicoIntermedia
+                        .Where(em => em.IdEspecialidadNavigation.Nombre.ToLower().Contains(nombreEspecialidad.ToLower()))
+                        .Select(em => new
+                        {
+                            m.Id,
+                            m.Nombre,
+                            m.Apellido,
+                            m.Email,
+                            m.Telefono,
+                            m.Calle,
+                            m.Colonia,
+                            m.Numero,
+                            m.Ciudad,
+                            m.Pais,
+                            m.CodigoPostal,
+                            m.Estatus,
+                            FechaRegistro = m.FechaRegistro?.ToString("yyyy-MM-dd HH:mm:ss"),
+                            Especialidades = new
+                            {
+                                em.IdEspecialidad,
+                                em.NumCedula,
+                                em.Honorarios,
+                                Especialidad = em.IdEspecialidadNavigation?.Nombre
+                            }
+                        })
+                );
 
-                // Mapear la lista de médicos filtrados a un formato DTO para devolver
-                var listaMedicosDTO = medicosFiltrados.Select(m => new
+                var response = new
                 {
-                    IdDoctor = m.Id,
-                    NombreCompleto = $"{m.Nombre} {m.Apellido}",
-                    Especialidades = m.EspecialidadMedicoIntermedia
-                                        .Where(em => em.IdEspecialidadNavigation.Nombre.ToLower().Contains(nombreEspecialidad.ToLower()))
-                                        .Select(em => em.IdEspecialidadNavigation.Nombre),
-                    Direccion = $"{m.Calle}, {m.Colonia}, {m.Numero}, {m.Ciudad}, {m.Pais}, {m.CodigoPostal}",
-                    Honorarios = m.EspecialidadMedicoIntermedia
-                                    .Where(em => em.IdEspecialidadNavigation.Nombre.ToLower().Contains(nombreEspecialidad.ToLower()))
-                                    .Select(em => em.Honorarios)
-                                    .FirstOrDefault()
-                });
+                    mensaje = "Médicos obtenidos con éxito.",
+                    estatus = "success",
+                    data = listaMedicosDTO
+                };
 
-                return Ok(listaMedicosDTO);
+                return Ok(response);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
+
 
 
         [HttpGet]
