@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using static MediFinder_Backend.ModelosEspeciales.RegistrarMedico;
 using static MediFinder_Backend.ModelosEspeciales.RegistrarAdministrador;
+using System.Globalization;
 
 namespace MediFinder_Backend.Controllers
 {
@@ -426,28 +427,28 @@ namespace MediFinder_Backend.Controllers
             }
         }
 
-
-
         [HttpGet]
-        [Route("ObtenerHorasDeTrabajo/{idMedico}/{dia}/{fecha}")]
-        public async Task<IActionResult> ObtenerHorasDeTrabajo(int idMedico, int dia, DateTime fecha)
+        [Route("ObtenerHorasDeTrabajo/{idMedico}/{fecha}")]
+        public async Task<IActionResult> ObtenerHorasDeTrabajo(int idMedico, DateTime fecha)
         {
             try
             {
+                // Determinar el día de la semana
+                int dia = (int)fecha.DayOfWeek == 0 ? 7 : (int)fecha.DayOfWeek; 
+
                 // Validar que la fecha no sea inhábil para el médico
                 var fechaInhabil = await _baseDatos.DiaInhabil
-                .Where(d => d.IdMedico == idMedico && d.Fecha.HasValue && d.Fecha.Value.Date == fecha.Date)
-                .AnyAsync();
+                    .AnyAsync(d => d.IdMedico == idMedico && d.Fecha.HasValue && d.Fecha.Value.Date == fecha.Date);
 
                 if (fechaInhabil)
                 {
-                    return BadRequest("El día solicitado es inhábil para el médico.");
+                    return BadRequest(new { mensaje = "El día solicitado es inhábil para el médico.", estatus = "error", data = new { } });
                 }
 
                 // Verificar que el día esté dentro del rango válido
                 if (dia < 1 || dia > 7)
                 {
-                    return BadRequest("El día debe estar entre 1 (lunes) y 7 (domingo).");
+                    return BadRequest(new { mensaje = "El día debe estar entre 1 (lunes) y 7 (domingo).", estatus = "error", data = new { } });
                 }
 
                 // Obtener los horarios del médico para el día solicitado
@@ -455,12 +456,22 @@ namespace MediFinder_Backend.Controllers
                     .Where(h => h.IdMedico == idMedico && h.Dia == dia)
                     .ToListAsync();
 
-                if (horarios == null || !horarios.Any())
+                if (!horarios.Any())
                 {
-                    return NotFound("No se encontraron horarios para el médico en el día especificado.");
+                    return NotFound(new { mensaje = "No se encontraron horarios para el médico en el día especificado.", estatus = "error", data = new { } });
                 }
 
-                // Determinar todas las horas trabajadas
+                // Obtener las horas de las citas programadas para la fecha específica
+                var horasCitas = await _baseDatos.Cita
+                    .Where(c => c.IdMedico == idMedico
+                                 && c.FechaInicio >= fecha.Date
+                                 && c.FechaInicio < fecha.Date.AddDays(1)) 
+                    .Select(c => c.FechaInicio)
+                    .Where(c => c.HasValue)
+                    .Select(c => c.Value.ToString("HH:mm"))
+                    .Distinct()
+                    .ToListAsync();
+
                 var horasTrabajadas = new HashSet<string>();
 
                 foreach (var horario in horarios)
@@ -477,20 +488,25 @@ namespace MediFinder_Backend.Controllers
                     // Generar las horas en el rango de inicio a fin
                     for (var current = horaInicio; current <= horaFin; current = current.Add(TimeSpan.FromHours(1)))
                     {
-                        horasTrabajadas.Add(current.ToString("HH:mm"));
+                        var horaFormateada = current.ToString("HH:mm");
+                        if (!horasCitas.Contains(horaFormateada)) // Excluir horas ya ocupadas
+                        {
+                            horasTrabajadas.Add(horaFormateada);
+                        }
                     }
                 }
 
-                // Ordenar las horas y convertir a una lista
                 var horasOrdenadas = horasTrabajadas.OrderBy(h => h).ToList();
 
-                return Ok(horasOrdenadas);
+                return Ok(new { mensaje = "Horarios obtenidos correctamente.", estatus = "success", data = horasOrdenadas });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+                return StatusCode(500, new { mensaje = $"Error interno del servidor: {ex.Message}", estatus = "error", data = new { } });
             }
         }
+
+
         /*
         [HttpPost]
         [Route("RegistrarHorasTrabajo")]
