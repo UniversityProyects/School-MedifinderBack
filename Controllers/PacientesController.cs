@@ -139,7 +139,12 @@ namespace MediFinder_Backend.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new
+                {
+                    estatus = "error",
+                    mensaje = "Datos inválidos",
+                    datos = ModelState
+                });
             }
 
             try
@@ -149,14 +154,27 @@ namespace MediFinder_Backend.Controllers
 
                 if (paciente == null)
                 {
-                    return NotFound($"No se encontró ningún paciente con el ID {id}");
+                    return NotFound(new
+                    {
+                        estatus = "error",
+                        mensaje = $"No se encontró ningún paciente con el ID {id}",
+                        datos = new { }
+                    });
                 }
 
-                // Actualizar los datos del paciente con los nuevos valores
                 paciente.Nombre = pacienteDTO.Nombre;
                 paciente.Apellido = pacienteDTO.Apellido;
                 paciente.Email = pacienteDTO.Email;
-                paciente.Contrasena = pacienteDTO.Contrasena;
+
+                if (!string.IsNullOrEmpty(pacienteDTO.Contrasena))
+                {
+                    paciente.Contrasena = pacienteDTO.Contrasena;
+                }
+                if (!string.IsNullOrEmpty(pacienteDTO.Estatus))
+                {
+                    paciente.Estatus = pacienteDTO.Estatus;
+                }
+
                 paciente.Telefono = pacienteDTO.Telefono;
                 paciente.FechaNacimiento = pacienteDTO.FechaNacimiento;
                 paciente.Sexo = pacienteDTO.Sexo;
@@ -166,13 +184,24 @@ namespace MediFinder_Backend.Controllers
                 _baseDatos.Paciente.Update(paciente);
                 await _baseDatos.SaveChangesAsync();
 
-                return Ok(new { message = $"Paciente con ID {id} modificado correctamente" });
+                return Ok(new
+                {
+                    estatus = "success",
+                    mensaje = $"Los datos del paciente {paciente.Nombre} han sido actualizados correctamente.",
+                    datos = paciente
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+                return StatusCode(500, new
+                {
+                    estatus = "error",
+                    mensaje = $"Error interno del servidor: {ex.Message}",
+                    datos = new { }
+                });
             }
         }
+
 
 
         // Obtener lista de pacientes registrados ------------------------------------------------------------------------------------------
