@@ -1,4 +1,5 @@
-﻿using MediFinder_Backend.Models;
+﻿using MediFinder_Backend.ModelosEspeciales;
+using MediFinder_Backend.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +29,7 @@ namespace MediFinder_Backend.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(new { codigoError = 400, mensaje = "Datos inválidos. Por favor, verifica los campos ingresados." });
+                return BadRequest(new { CodigoError = 400, Mensaje = "Datos inválidos. Por favor, verifica los campos ingresados." });
             }
 
             try
@@ -36,7 +37,7 @@ namespace MediFinder_Backend.Controllers
                 // Verifica si ya existe un administrador con el mismo nombre o correo electrónico.
                 if (await ExisteAdministrador(administradorDTO.Nombre, administradorDTO.Apellido, administradorDTO.Email))
                 {
-                    return BadRequest(new { codigoError = 400, mensaje = "Ya existe un administrador con el mismo nombre o correo electrónico." });
+                    return BadRequest(new { CodigoError = 400, Mensaje = "Ya existe un administrador con el mismo nombre o correo electrónico." });
                 }
 
                 // Crea un nuevo administrador
@@ -53,11 +54,11 @@ namespace MediFinder_Backend.Controllers
                 _baseDatos.Administrador.Add(administradorNuevo);
                 await _baseDatos.SaveChangesAsync();
 
-                return Ok(new { codigoError = 200, mensaje = "Administrador registrado correctamente", id = administradorNuevo.Id });
+                return Ok(new { mensaje = "Administrador registrado correctamente", id = administradorNuevo.Id });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { codigoError = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+                return StatusCode(500, new { CodigoError = 500, Mensaje = $"Error interno del servidor: {ex.Message}" });
             }
         }
 
@@ -67,9 +68,10 @@ namespace MediFinder_Backend.Controllers
         [Route("Login")]
         public async Task<IActionResult> IniciarSesion([FromBody] LoginAdmonDTO loginAdmonDTO)
         {
+
             if (!ModelState.IsValid)
             {
-                return BadRequest(new { codigoError = 400, mensaje = "Datos inválidos. Por favor, verifica los campos ingresados." });
+                return BadRequest(new { CodigoError = 400, Mensaje = "Datos inválidos. Por favor, verifica los campos ingresados." });
             }
 
             try
@@ -80,26 +82,21 @@ namespace MediFinder_Backend.Controllers
 
                 if (administrador == null)
                 {
-                    return Unauthorized(new { codigoError = 401, mensaje = "Credenciales incorrectas. Por favor, verifique su correo electrónico y contraseña." });
+                    return Unauthorized(new { CodigoError = 401, mensaje = "Credenciales incorrectas. Por favor, verifique su correo electrónico y contraseña." });
                 }
 
                 // Retornar los datos necesarios para el almacenamiento en localStorage
                 return Ok(new
                 {
-                    codigoError = 200,
-                    mensaje = "Inicio de sesión exitoso.",
-                    datos = new
-                    {
-                        email = administrador.Email,
-                        nombreCompleto = $"{administrador.Nombre} {administrador.Apellido}",
-                        id = administrador.Id,
-                        estatus = administrador.Estatus
-                    }
+                    email = administrador.Email,
+                    nombreCompleto = $"{administrador.Nombre} {administrador.Apellido}",
+                    id = administrador.Id,
+                    estatus = administrador.Estatus
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { codigoError = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+                return StatusCode(500, new { CodigoError = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
             }
         }
 
