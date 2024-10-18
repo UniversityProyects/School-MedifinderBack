@@ -43,7 +43,8 @@ namespace MediFinder_Backend.Controllers
                             (grouped.Count(g => g.cm != null) > 0 ? grouped.Count(g => g.cm != null) : 1),
                             2
                         ),
-                        Estatus = grouped.Max(g => g.med.Estatus)
+                        Estatus = grouped.Max(g => g.med.Estatus),
+                        CantidadComentarios = grouped.Count(x => x.cm.Comentarios != null)
                     }
                 ).OrderBy(r => r.PromedioPuntuacion).ToListAsync();
 
