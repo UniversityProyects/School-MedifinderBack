@@ -37,6 +37,8 @@ public partial class Medico
 
     public DateTime? FechaBaja { get; set; }
 
+    public string? Avatar { get; set; }
+
     public virtual ICollection<Citum> Cita { get; set; } = new List<Citum>();
 
     public virtual ICollection<DiaInhabil> DiaInhabils { get; set; } = new List<DiaInhabil>();

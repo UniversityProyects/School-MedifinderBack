@@ -18,9 +18,11 @@ namespace MediFinder_Backend.ModelosEspeciales
             public string Ciudad { get; set; }
             public string Pais { get; set; }
             public string Codigo_Postal { get; set; }
+            public string Avatar { get; set; }
 
             public List<EspecialidadDTO> Especialidades { get; set; }
         }
+
 
         public class EspecialidadDTO
         {

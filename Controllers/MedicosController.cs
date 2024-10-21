@@ -33,7 +33,6 @@ namespace MediFinder_Backend.Controllers
 
             try
             {
-
                 // Verificar si todas las especialidades existen
                 foreach (var especialidadDTO in medicoDTO.Especialidades)
                 {
@@ -46,12 +45,11 @@ namespace MediFinder_Backend.Controllers
                     }
                 }
 
-                //Permite validar si ya existe una cuenta registrada.
+                // Permite validar si ya existe una cuenta registrada.
                 if (await ExisteMedico(medicoDTO.Nombre, medicoDTO.Apellido, medicoDTO.Email))
                 {
                     return BadRequest($"Ya existe un médico con el mismo nombre o correo electrónico.");
                 }
-
 
                 var medico = new Medico
                 {
@@ -66,8 +64,9 @@ namespace MediFinder_Backend.Controllers
                     Ciudad = medicoDTO.Ciudad,
                     Pais = medicoDTO.Pais,
                     CodigoPostal = medicoDTO.Codigo_Postal,
-                    Estatus = "1", // Nuevo usuario Sin Validar
-                    FechaRegistro = DateTime.Now 
+                    Estatus = "1", 
+                    FechaRegistro = DateTime.Now,
+                    Avatar = medicoDTO.Avatar
                 };
 
                 // Guardar el médico en la base de datos
@@ -98,6 +97,7 @@ namespace MediFinder_Backend.Controllers
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
+
 
 
         // Verificar Login Médico -----------------------------------------------------------------------------------------------------------
