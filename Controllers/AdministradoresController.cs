@@ -1,4 +1,5 @@
-﻿using MediFinder_Backend.Models;
+﻿using MediFinder_Backend.ModelosEspeciales;
+using MediFinder_Backend.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,18 +29,18 @@ namespace MediFinder_Backend.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new { CodigoError = 400, Mensaje = "Datos inválidos. Por favor, verifica los campos ingresados." });
             }
 
             try
             {
-                //Permite validar si ya existe una cuenta registrada.
+                // Verifica si ya existe un administrador con el mismo nombre o correo electrónico.
                 if (await ExisteAdministrador(administradorDTO.Nombre, administradorDTO.Apellido, administradorDTO.Email))
                 {
-                    return BadRequest($"Ya existe un administrador con el mismo nombre o correo electrónico.");
+                    return BadRequest(new { CodigoError = 400, Mensaje = "Ya existe un administrador con el mismo nombre o correo electrónico." });
                 }
 
-                //Formateamod los valores
+                // Crea un nuevo administrador
                 var administradorNuevo = new Administrador
                 {
                     Nombre = administradorDTO.Nombre,
@@ -49,26 +50,28 @@ namespace MediFinder_Backend.Controllers
                     Estatus = "1"
                 };
 
-                // Guardar el médico en la base de datos
+                // Guardar el administrador en la base de datos
                 _baseDatos.Administrador.Add(administradorNuevo);
                 await _baseDatos.SaveChangesAsync();
 
-                return Ok(new { message = "Administrador registrado correctamente", administradorNuevo.Id });
+                return Ok(new { mensaje = "Administrador registrado correctamente", id = administradorNuevo.Id });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+                return StatusCode(500, new { CodigoError = 500, Mensaje = $"Error interno del servidor: {ex.Message}" });
             }
         }
+
 
         // Verificar Login Administrador -----------------------------------------------------------------------------------------------------------
         [HttpPost]
         [Route("Login")]
         public async Task<IActionResult> IniciarSesion([FromBody] LoginAdmonDTO loginAdmonDTO)
         {
+
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new { CodigoError = 400, Mensaje = "Datos inválidos. Por favor, verifica los campos ingresados." });
             }
 
             try
@@ -79,13 +82,12 @@ namespace MediFinder_Backend.Controllers
 
                 if (administrador == null)
                 {
-                    return Unauthorized("Credenciales incorrectas. Por favor, verifique su correo electrónico y contraseña.");
+                    return Unauthorized(new { CodigoError = 401, mensaje = "Credenciales incorrectas. Por favor, verifique su correo electrónico y contraseña." });
                 }
 
                 // Retornar los datos necesarios para el almacenamiento en localStorage
                 return Ok(new
                 {
-                    success = true,
                     email = administrador.Email,
                     nombreCompleto = $"{administrador.Nombre} {administrador.Apellido}",
                     id = administrador.Id,
@@ -94,9 +96,10 @@ namespace MediFinder_Backend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+                return StatusCode(500, new { CodigoError = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
             }
         }
+
 
         //Modificar informacion administrador ----------------------------------------
         [HttpPut]
