@@ -1,6 +1,7 @@
 ﻿using MediFinder_Backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static MediFinder_Backend.ModelosEspeciales.RegistrarTiposSuscripciones;
 
 namespace MediFinder_Backend.Controllers
 {
@@ -53,7 +54,7 @@ namespace MediFinder_Backend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { CodigoError = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
             }
         }
 
@@ -68,7 +69,7 @@ namespace MediFinder_Backend.Controllers
                 var existeMedico = await _baseDatos.Medicos.FirstOrDefaultAsync(e => e.Id == idMedico);
                 if (existeMedico == null)
                 {
-                    return NotFound(new { CodigoError = 404, mensaje = $"El médico ingresado no exite" } );
+                    return NotFound(new { CodigoError = 404, mensaje = $"El médico ingresado no exite" });
                 }
 
                 //Sacamos el promedio con base en una consulta
@@ -103,7 +104,7 @@ namespace MediFinder_Backend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { CodigoError = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
             }
         }
 
@@ -154,13 +155,175 @@ namespace MediFinder_Backend.Controllers
                 }
 
                 // Retornar 0 si no existe calificación
-                return NotFound(new { CodigoError = 404, mensaje = $"No existe calificación para la cita solicitada." });
+                return NotFound(new { CodigoHttp = 404, mensaje = $"No existe calificación para la cita solicitada." });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { CodigoError = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
             }
         }
 
+        //Método get para obtener el listado de tipos de suscripciones
+        [HttpGet]
+        [Route("ObtenerTiposSuscripcionActivos")]
+        public async Task<IActionResult> ObtenerListadoTiposSuscripciones()
+        {
+            try
+            {
+                var resultados = from ts in _baseDatos.TipoSuscripcion
+                                 where ts.Estatus == "1"
+                                 select new
+                                 {
+                                     Id = ts.Id,
+                                     Nombre = ts.Nombre,
+                                     Descripcion = ts.Descripcion,
+                                     Precio = ts.Precio,
+                                     Duracion = ts.Duracion
+                                 };
+
+
+                return Ok(resultados);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+        //Registrar tipo suscripcion ----------------------------------------
+        [HttpPost]
+        [Route("RegistrarTipoSuscripcion")]
+        public async Task<IActionResult> RegistrarTipoSuscripcion([FromBody] TipoSuscripcionDTO tipoSuscripcionDTO)
+        {
+            //Valida que el modelo recibido este correcto
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { CodigoHttp = 400, mensaje = $"La petición no contiene la estructura requerida." });
+            }
+
+            try
+            {
+                var tipoSuscripcionNuevo = new TipoSuscripcion
+                {
+                    Nombre = tipoSuscripcionDTO.Nombre,
+                    Descripcion = tipoSuscripcionDTO.Descripcion,
+                    Precio = tipoSuscripcionDTO.Precio,
+                    Duracion = tipoSuscripcionDTO.Duracion,
+                    Estatus = "1"
+                };
+
+                _baseDatos.TipoSuscripcion.Add(tipoSuscripcionNuevo);
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new { CodigoHttp = 200, mensaje = "El tipo de suscripcion ha sido registrado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+        //Modificar tipo suscripcion ----------------------------------------
+        [HttpPut]
+        [Route("ModificarTipoSuscripcion/{id}")]
+        public async Task<IActionResult> ModificarTipoSuscripcion(int id, [FromBody] TipoSuscripcionDTO tipoSuscripcionDTO)
+        {
+            //Valida que el modelo recibido este correcto
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { CodigoHttp = 400, mensaje = $"La petición no contiene la estructura requerida." });
+            }
+
+            var tipoSuscripcionExistente = await _baseDatos.TipoSuscripcion.FindAsync(id);
+            if (tipoSuscripcionExistente == null)
+            {
+                return NotFound(new { CodigoHttp = 404, mensaje = $"Tipo de suscripción con id {id} no encontrado." });
+            }
+
+            try
+            {
+                tipoSuscripcionExistente.Nombre = tipoSuscripcionDTO.Nombre;
+                tipoSuscripcionExistente.Descripcion = tipoSuscripcionDTO.Descripcion;
+                tipoSuscripcionExistente.Precio = tipoSuscripcionDTO.Precio;
+                tipoSuscripcionExistente.Duracion = tipoSuscripcionDTO.Duracion;
+
+                _baseDatos.TipoSuscripcion.Update(tipoSuscripcionExistente);
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new { CodigoHttp = 200, message = "Registro actualizado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+        //Detalles de suscripcion -------------------------------------------
+        [HttpGet]
+        [Route("DetallesTipoSuscripcion/{id}")]
+        public async Task<IActionResult> DetallesTipoSuscripcion(int id)
+        {
+            try
+            {
+                //Consulta para sacar todos los medicos permitidos
+                var tipoSuscripcion = await _baseDatos.TipoSuscripcion
+                    .Where(ts => ts.Id == id)
+                    .Select(ts => new
+                    {
+                        ts.Id,
+                        ts.Nombre,
+                        ts.Descripcion,
+                        ts.Precio,
+                        ts.Duracion,
+                        ts.Estatus
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (tipoSuscripcion == null)
+                {
+                    return NotFound(new { CodigoHttp = 404, mensaje = $"Tipo de suscripción con id {id} no encontrado." });
+                }
+
+                return Ok(tipoSuscripcion);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+        //Eliminar tipo de suscripcion
+        [HttpPut]
+        [Route("EliminarTipoSuscripcion/{id}")]
+        public async Task<IActionResult> EliminarTipoSuscripcion(int id)
+        {
+            //Valida que el modelo recibido este correcto
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { CodigoHttp = 400, mensaje = $"La petición no contiene la estructura requerida." });
+            }
+
+            var tipoSuscripcionExistente = await _baseDatos.TipoSuscripcion.FindAsync(id);
+            if (tipoSuscripcionExistente == null)
+            {
+                return NotFound(new { CodigoHttp = 404, mensaje = $"Tipo de suscripción con id {id} no encontrado." });
+            }
+
+            try
+            {
+                tipoSuscripcionExistente.Estatus = "0";
+
+                _baseDatos.TipoSuscripcion.Update(tipoSuscripcionExistente);
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new { CodigoHttp = 200, message = "Registro actualizado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
     }
 }
