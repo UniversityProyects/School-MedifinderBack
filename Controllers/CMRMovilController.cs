@@ -325,5 +325,156 @@ namespace MediFinder_Backend.Controllers
                 return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
             }
         }
+
+        //Metodo para obtener la cantidad de suscripciones que tienen los medicos
+        [HttpGet]
+        [Route("ObtenerSuscripcionesMedicos")]
+        public async Task<IActionResult> ObtenerSuscripcionesMedicos()
+        {
+            try
+            {
+                var resultados = from m in _baseDatos.Medicos
+                        join s in _baseDatos.Suscripcion on m.Id equals s.IdMedico into suscripcionesGroup
+                        from s in suscripcionesGroup.DefaultIfEmpty() // LEFT JOIN
+                        group s by new { m.Id, m.Nombre, m.Apellido, m.Estatus } into grouped
+                        select new
+                        {
+                            Id = grouped.Key.Id,
+                            Nombre = grouped.Key.Nombre,
+                            Apellido = grouped.Key.Apellido,
+                            Estatus = grouped.Key.Estatus,
+                            CantidadSuscripciones = grouped.Count(s => s != null) // Contar las suscripciones no nulas
+                        };
+
+                var listaResultado = await resultados.ToListAsync();
+
+
+
+                return Ok(resultados);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+        //Metodo para obtener las suscripciones realizadas por medico
+        [HttpGet]
+        [Route("ListadoSuscripcionesPorMedico/{id}")]
+        public async Task<IActionResult> ListadoSuscripcionesPorMedico(int id)
+        {
+            try
+            {
+                var medicoExiste = await _baseDatos.Medicos.FindAsync(id);
+                if (medicoExiste == null)
+                {
+                    return NotFound(new { CodigoHttp = 404, mensaje = $"Médico con id {id} no encontrado." });
+                }
+
+                //Consulta para sacar todos los medicos permitidos
+                var resultado =
+                        from s in _baseDatos.Suscripcion
+                        join m in _baseDatos.Medicos on s.IdMedico equals m.Id
+                        join ts in _baseDatos.TipoSuscripcion on s.IdTipoSuscripcion equals ts.Id
+                        join ps in _baseDatos.PagoSuscripcion on s.Id equals ps.IdSuscripcion into pagoSuscripcionesGroup
+                        from ps in pagoSuscripcionesGroup.DefaultIfEmpty() // LEFT JOIN
+                        where s.IdMedico == id
+                        group new
+                        {
+                            s.Id,
+                            s.IdTipoSuscripcion,
+                            ts.Nombre,
+                            ts.Descripcion,
+                            ts.Precio,
+                            EstatusPago = ps != null ? "PAGADA" : "NO PAGADA",
+                            ps.FechaPago
+                        }
+                        by new
+                        {
+                            m.Id,
+                            m.Nombre,
+                            m.Apellido,
+                            m.Estatus
+                        } into grouped
+                        select new
+                        {
+                            idMedico = grouped.Key.Id,
+                            nombreMedico = grouped.Key.Nombre,
+                            apellidoMedico = grouped.Key.Apellido,
+                            estatusMedico = grouped.Key.Estatus,
+                            suscripciones = grouped.Select(g => new
+                            {
+                                idSuscripcion = g.Id,
+                                idTipoSuscripcion = g.IdTipoSuscripcion,
+                                nombreTipoSuscripcion = g.Nombre,
+                                descripcionTipoSuscripcion = g.Descripcion,
+                                precioTipoSuscripcion = g.Precio,
+                                estatusPago = g.EstatusPago,
+                                fechaPago = g.FechaPago
+                            }).ToList()
+                        };
+
+                var listaResultado = await resultado.ToListAsync();
+
+                return Ok(listaResultado);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+        //Metodo para detalle de una suscripcion
+        [HttpGet]
+        [Route("DetalleSuscripcionMedico/{id}")]
+        public async Task<IActionResult> DetalleSuscripcionMedico(int id)
+        {
+            try
+            {
+                var suscripcionExiste = await _baseDatos.Suscripcion.FindAsync(id);
+                if (suscripcionExiste == null)
+                {
+                    return NotFound(new { CodigoHttp = 404, mensaje = $"Suscripción con id {id} no encontrada." });
+                }
+
+                //Consulta para sacar todos los medicos permitidos
+                var resultado =
+                        from s in _baseDatos.Suscripcion
+                        join m in _baseDatos.Medicos on s.IdMedico equals m.Id
+                        join ts in _baseDatos.TipoSuscripcion on s.IdTipoSuscripcion equals ts.Id
+                        join ps in _baseDatos.PagoSuscripcion on s.Id equals ps.IdSuscripcion into pagoSuscripcionesGroup
+                        from ps in pagoSuscripcionesGroup.DefaultIfEmpty() // LEFT JOIN
+                        where s.Id == 9
+                        select new
+                        {
+                            IdSuscripcion = s.Id,
+                            IdMedico = m.Id,
+                            NombreMedico = m.Nombre,
+                            ApellidoMedico = m.Apellido,
+                            EstatusMedico = m.Estatus,
+                            IdTipoSuscripcion = ts.Id,
+                            NombreTipoSuscripcion = ts.Nombre,
+                            DescripcionTipoSuscripcion = ts.Descripcion,
+                            PrecioTipoSuscripcion = ts.Precio,
+                            DuracionTipoSuscripcion = ts.Duracion,
+                            FechaInicio = s.FechaInicio,
+                            FechaFin = s.FechaFin,
+                            EstatusPago = ps != null ? "PAGADA" : "NO PAGADA",
+                            FechaPago = ps.FechaPago
+                        };
+
+                var listaResultado = await resultado.ToListAsync();
+
+
+                return Ok(listaResultado);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
     }
 }
