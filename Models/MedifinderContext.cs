@@ -17,9 +17,17 @@ public partial class MedifinderContext : DbContext
 
     public virtual DbSet<Administrador> Administrador { get; set; }
 
+    public virtual DbSet<Buzon> Buzons { get; set; }
+
+    public virtual DbSet<BuzonClasificacionComentario> BuzonClasificacionComentarios { get; set; }
+
+    public virtual DbSet<BuzonTipoComentario> BuzonTipoComentarios { get; set; }
+
     public virtual DbSet<CalificacionMedico> CalificacionMedicos { get; set; }
 
     public virtual DbSet<Citum> Cita { get; set; }
+
+    public virtual DbSet<ClasificacionComentario> ClasificacionComentarios { get; set; }
 
     public virtual DbSet<DiaInhabil> DiaInhabil { get; set; }
 
@@ -43,9 +51,11 @@ public partial class MedifinderContext : DbContext
 
     public virtual DbSet<Suscripcion> Suscripcion { get; set; }
 
+    public virtual DbSet<TipoComentario> TipoComentarios { get; set; }
+
     public virtual DbSet<TipoSuscripcion> TipoSuscripcion { get; set; }
 
-    public virtual DbSet<Tratamiento> Tratamiento { get; set; }
+    public virtual DbSet<Tratamiento> Tratamientos { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
 
@@ -72,6 +82,52 @@ public partial class MedifinderContext : DbContext
             entity.Property(e => e.Nombre)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<Buzon>(entity =>
+        {
+            entity.HasKey(e => e.IdSoliditudBuzon).HasName("PK__buzon__E6EDA0FE8C254F68");
+
+            entity.ToTable("buzon");
+
+            entity.Property(e => e.Comentario)
+                .HasMaxLength(255)
+                .IsUnicode(false);
+            entity.Property(e => e.Estatus).HasDefaultValue(0);
+        });
+
+        modelBuilder.Entity<BuzonClasificacionComentario>(entity =>
+        {
+            entity.HasKey(e => e.IdBuzonClasificacionComentario).HasName("PK__buzonCla__C448247E0839712A");
+
+            entity.ToTable("buzonClasificacionComentario");
+
+            entity.HasOne(d => d.IdClasificacionComentarioNavigation).WithMany(p => p.BuzonClasificacionComentarios)
+                .HasForeignKey(d => d.IdClasificacionComentario)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__buzonClas__IdCla__10566F31");
+
+            entity.HasOne(d => d.IdSoliditudBuzonNavigation).WithMany(p => p.BuzonClasificacionComentarios)
+                .HasForeignKey(d => d.IdSoliditudBuzon)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__buzonClas__IdSol__0F624AF8");
+        });
+
+        modelBuilder.Entity<BuzonTipoComentario>(entity =>
+        {
+            entity.HasKey(e => e.IdBuzonTipoComentario).HasName("PK__buzonTip__DDC0B19C789C4F52");
+
+            entity.ToTable("buzonTipoComentario");
+
+            entity.HasOne(d => d.IdSoliditudBuzonNavigation).WithMany(p => p.BuzonTipoComentarios)
+                .HasForeignKey(d => d.IdSoliditudBuzon)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__buzonTipo__IdSol__0B91BA14");
+
+            entity.HasOne(d => d.IdTipoComentarioNavigation).WithMany(p => p.BuzonTipoComentarios)
+                .HasForeignKey(d => d.IdTipoComentario)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__buzonTipo__IdTip__0C85DE4D");
         });
 
         modelBuilder.Entity<CalificacionMedico>(entity =>
@@ -118,6 +174,18 @@ public partial class MedifinderContext : DbContext
             entity.HasOne(d => d.IdPacienteNavigation).WithMany(p => p.Cita)
                 .HasForeignKey(d => d.IdPaciente)
                 .HasConstraintName("FK_Cita_Paciente");
+        });
+
+        modelBuilder.Entity<ClasificacionComentario>(entity =>
+        {
+            entity.HasKey(e => e.IdClasificacionComentario).HasName("PK__clasific__441AEA3A5A0FB827");
+
+            entity.ToTable("clasificacionComentario");
+
+            entity.Property(e => e.Clasificacion)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.Estatus).HasDefaultValue(1);
         });
 
         modelBuilder.Entity<DiaInhabil>(entity =>
@@ -242,6 +310,7 @@ public partial class MedifinderContext : DbContext
             entity.Property(e => e.Apellido)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.Avatar).IsUnicode(false);
             entity.Property(e => e.Calle)
                 .HasMaxLength(100)
                 .IsUnicode(false);
@@ -377,6 +446,18 @@ public partial class MedifinderContext : DbContext
             entity.HasOne(d => d.IdTipoSuscripcionNavigation).WithMany(p => p.Suscripcions)
                 .HasForeignKey(d => d.IdTipoSuscripcion)
                 .HasConstraintName("KF_Suscripcion_Tipo");
+        });
+
+        modelBuilder.Entity<TipoComentario>(entity =>
+        {
+            entity.HasKey(e => e.IdTipoComentario).HasName("PK__tipoCome__10D839846A933D3A");
+
+            entity.ToTable("tipoComentario");
+
+            entity.Property(e => e.Estatus).HasDefaultValue(1);
+            entity.Property(e => e.Tipo)
+                .HasMaxLength(100)
+                .IsUnicode(false);
         });
 
         modelBuilder.Entity<TipoSuscripcion>(entity =>
