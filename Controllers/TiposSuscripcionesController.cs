@@ -282,7 +282,7 @@ namespace MediFinder_Backend.Controllers
 
                 return Ok(new
                 {
-                    mensaje = "Tipo de suscripción desactivado exitosamente.",
+                    mensaje = "Se activo exitosamente.",
                     estatus = "success",
                     data = tipoSuscripcionExistente
                 });
