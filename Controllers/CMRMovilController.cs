@@ -1,6 +1,7 @@
 ﻿using MediFinder_Backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static MediFinder_Backend.ModelosEspeciales.RegistrarAdministrador;
 using static MediFinder_Backend.ModelosEspeciales.RegistrarTiposSuscripciones;
 
 namespace MediFinder_Backend.Controllers
@@ -446,7 +447,7 @@ namespace MediFinder_Backend.Controllers
                         join ts in _baseDatos.TipoSuscripcion on s.IdTipoSuscripcion equals ts.Id
                         join ps in _baseDatos.PagoSuscripcion on s.Id equals ps.IdSuscripcion into pagoSuscripcionesGroup
                         from ps in pagoSuscripcionesGroup.DefaultIfEmpty() // LEFT JOIN
-                        where s.Id == 9
+                        where s.Id == id
                         select new
                         {
                             IdSuscripcion = s.Id,
@@ -475,6 +476,186 @@ namespace MediFinder_Backend.Controllers
             {
                 return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
             }
+        }
+
+        //Registrar Administrador ----------------------------------------------
+        [HttpPost]
+        [Route("Registrar")]
+        public async Task<IActionResult> RegistrarAdministrador([FromBody] AdministradorDTO administradorDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { CodigoError = 400, Mensaje = "Datos inválidos. Por favor, verifica los campos ingresados." });
+            }
+
+            try
+            {
+                // Verifica si ya existe un administrador con el mismo nombre o correo electrónico.
+                if (await ExisteAdministrador(administradorDTO.Nombre, administradorDTO.Apellido, administradorDTO.Email))
+                {
+                    return BadRequest(new { CodigoError = 400, Mensaje = "Ya existe un administrador con el mismo nombre o correo electrónico." });
+                }
+
+                // Crea un nuevo administrador
+                var administradorNuevo = new Administrador
+                {
+                    Nombre = administradorDTO.Nombre,
+                    Apellido = administradorDTO.Apellido,
+                    Email = administradorDTO.Email,
+                    Contrasena = administradorDTO.Contrasena,
+                    Estatus = "0"
+                };
+
+                // Guardar el administrador en la base de datos
+                _baseDatos.Administrador.Add(administradorNuevo);
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new { mensaje = "Administrador registrado correctamente", id = administradorNuevo.Id });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoError = 500, Mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+
+        // Verificar Login Administrador -----------------------------------------------------------------------------------------------------------
+        [HttpPost]
+        [Route("Login")]
+        public async Task<IActionResult> IniciarSesion([FromBody] LoginAdmonDTO loginAdmonDTO)
+        {
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { CodigoError = 400, Mensaje = "Datos inválidos. Por favor, verifica los campos ingresados." });
+            }
+
+            try
+            {
+                // Busca el administrador por correo electrónico y contraseña
+                var administrador = await _baseDatos.Administrador
+                    .FirstOrDefaultAsync(a => a.Email == loginAdmonDTO.Email && a.Contrasena == loginAdmonDTO.Contrasena);
+
+                if (administrador == null)
+                {
+                    return Unauthorized(new { CodigoError = 401, mensaje = "Credenciales incorrectas. Por favor, verifique su correo electrónico y contraseña." });
+                }
+
+                if (administrador.Estatus == "0")
+                {
+                    return Unauthorized(new { CodigoError = 401, mensaje = "Credenciales ." });
+                }
+
+                // Retornar los datos necesarios para el almacenamiento en localStorage
+                return Ok(new
+                {
+                    email = administrador.Email,
+                    nombreCompleto = $"{administrador.Nombre} {administrador.Apellido}",
+                    id = administrador.Id,
+                    estatus = administrador.Estatus
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoError = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+
+        //Metodo para consultar la lista de administadores
+        [HttpGet]
+        [Route("ListadoAdministradores")]
+        public async Task<IActionResult> ListadoAdministradores()
+        {
+            try
+            {
+                var administradores = _baseDatos.Administrador
+                .Select(a => new
+                {
+                    a.Id,
+                    a.Nombre,
+                    a.Apellido,
+                    a.Email,
+                    a.Estatus
+                })
+                .OrderByDescending(a => a.Id)
+                .ToList();
+
+                return Ok(administradores);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+        //Activar administrador  ----------------------------------------
+        [HttpPut]
+        [Route("ActivarAdministrador/{id}")]
+        public async Task<IActionResult> ActivarAdministrador(int id)
+        {
+
+            var administradorExistente = await _baseDatos.Administrador.FindAsync(id);
+            if (administradorExistente == null)
+            {
+                return NotFound(new { CodigoHttp = 404, mensaje = $"Administrador con id {id} no encontrado." });
+            }
+
+            try
+            {
+                administradorExistente.Estatus = "1";
+
+                _baseDatos.Administrador.Update(administradorExistente);
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new { CodigoHttp = 200, message = "Administrador activado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+        //Desactivar administrador  ----------------------------------------
+        [HttpPut]
+        [Route("DesactivarAdministrador/{id}")]
+        public async Task<IActionResult> DesactivarAdministrador(int id)
+        {
+
+            var administradorExistente = await _baseDatos.Administrador.FindAsync(id);
+            if (administradorExistente == null)
+            {
+                return NotFound(new { CodigoHttp = 404, mensaje = $"Administrador con id {id} no encontrado." });
+            }
+
+            try
+            {
+                administradorExistente.Estatus = "0";
+
+                _baseDatos.Administrador.Update(administradorExistente);
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new { CodigoHttp = 200, message = "Administrador desactivado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+        //Metodo para verificar si no hay un administrador con la informacion ta registrada en la bd
+        private async Task<System.Boolean> ExisteAdministrador(string nombre, string apellido, string email)
+        {
+            var medico = await _baseDatos.Administrador
+                .FirstOrDefaultAsync(m => (m.Nombre == nombre && m.Apellido == apellido) || m.Email == email);
+
+            if (medico != null)
+            {
+                return true;
+
+            }
+            return false;
         }
     }
 }
