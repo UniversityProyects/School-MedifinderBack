@@ -154,7 +154,7 @@ namespace MediFinder_Backend.Controllers
                             }),
                             Direccion = $"{medico.Calle}, {medico.Colonia}, {medico.Numero}, {medico.Ciudad}, {medico.Pais}, {medico.CodigoPostal}",
                             Telefono = medico.Telefono,
-                            Estatis = medico.Estatus
+                            Estatus = medico.Estatus
                         };
                         return Ok(medicoDTO);
                     case 4: // Inactivo
