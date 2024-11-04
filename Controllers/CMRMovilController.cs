@@ -476,5 +476,216 @@ namespace MediFinder_Backend.Controllers
                 return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
             }
         }
+
+        [HttpPut]
+        [Route("Desactivar/{id}")]
+        public async Task<IActionResult> DesactivarTipoSuscripcion(int id)
+        {
+            var tipoSuscripcionExistente = await _baseDatos.TipoSuscripcion.FindAsync(id);
+            if (tipoSuscripcionExistente == null)
+            {
+                return NotFound(new
+                {
+                    mensaje = $"Tipo de suscripción con id {id} no encontrado.",
+                    estatus = "error",
+                    data = new { }
+                });
+            }
+            try
+            {
+                tipoSuscripcionExistente.Estatus = "0";
+
+                _baseDatos.TipoSuscripcion.Update(tipoSuscripcionExistente);
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    mensaje = "Tipo de suscripción desactivado exitosamente.",
+                    estatus = "success",
+                    data = tipoSuscripcionExistente
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = $"Error interno del servidor: {ex.Message}",
+                    estatus = "error",
+                    data = new { }
+                });
+            }
+        }
+
+        [HttpPut]
+        [Route("Activar/{id}")]
+        public async Task<IActionResult> ActivarTipoSuscripcion(int id)
+        {
+            var tipoSuscripcionExistente = await _baseDatos.TipoSuscripcion.FindAsync(id);
+            if (tipoSuscripcionExistente == null)
+            {
+                return NotFound(new
+                {
+                    mensaje = $"Tipo de suscripción con id {id} no encontrado.",
+                    estatus = "error",
+                    data = new { }
+                });
+            }
+            try
+            {
+                tipoSuscripcionExistente.Estatus = "1";
+
+                _baseDatos.TipoSuscripcion.Update(tipoSuscripcionExistente);
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    mensaje = "Se activo exitosamente.",
+                    estatus = "success",
+                    data = tipoSuscripcionExistente
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = $"Error interno del servidor: {ex.Message}",
+                    estatus = "error",
+                    data = new { }
+                });
+            }
+        }
+
+        [HttpGet]
+        [Route("ObtenerTiposSuscripciones")]
+        public async Task<IActionResult> ObtenerTiposSuscripciones()
+        {
+            try
+            {
+                var resultados = from ts in _baseDatos.TipoSuscripcion
+                                 select new
+                                 {
+                                     Id = ts.Id,
+                                     Nombre = ts.Nombre,
+                                     Descripcion = ts.Descripcion,
+                                     Precio = ts.Precio,
+                                     Duracion = ts.Duracion,
+                                     Estatus = ts.Estatus == "1" ? "Activo" : "Inactivo"
+                                 };
+
+
+                return Ok(resultados);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { CodigoHttp = 500, mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+        [HttpGet]
+        [Route("ObtenerMedicosRegistrados")]
+        public async Task<IActionResult> ObtenerMedicos()
+        {
+            try
+            {
+                var listaMedicos = await _baseDatos.Medicos
+                    .Include(m => m.EspecialidadMedicoIntermedia)
+                    .ThenInclude(em => em.IdEspecialidadNavigation)
+                    .Where(m => m.Estatus != "3") // Asegúrate de que Estatus es un string
+                    .ToListAsync();
+
+                var listaMedicosDTO = listaMedicos.Select(m => new
+                {
+                    m.Id,
+                    m.Nombre,
+                    m.Apellido,
+                    m.Email,
+                    m.Telefono,
+                    m.Calle,
+                    m.Colonia,
+                    m.Numero,
+                    m.Ciudad,
+                    m.Pais,
+                    m.CodigoPostal,
+                    m.Estatus,
+                    FechaRegistro = m.FechaRegistro?.ToString("yyyy-MM-dd"),
+                    Especialidades = m.EspecialidadMedicoIntermedia.Select(em => new
+                    {
+                        em.IdEspecialidad,
+                        em.NumCedula,
+                        em.Honorarios,
+                        Especialidad = em.IdEspecialidadNavigation?.Nombre
+                    })
+                });
+
+                return Ok(new
+                {
+                    mensaje = "Médicos obtenidos exitosamente.",
+                    estatus = "success",
+                    data = listaMedicosDTO
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "Error interno del servidor.",
+                    estatus = "error",
+                    error = ex.Message
+                });
+            }
+        }
+
+        // Actualizar Solicitud Medico -----------------------------------------------------------------------------------------------
+        [HttpPut]
+        [Route("ActualizarSolicitudMedico/{id}")]
+        public async Task<IActionResult> ActualizarSolicitudMedico(int id)
+        {
+            try
+            {
+                var medico = await _baseDatos.Medicos.FirstOrDefaultAsync(m => m.Id == id);
+
+                if (medico == null)
+                {
+                    return NotFound(new
+                    {
+                        mensaje = $"No se encontró un médico con el ID {id}.",
+                        estatus = "error",
+                        data = (object)null
+                    });
+                }
+
+                medico.Estatus = "3";
+
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    mensaje = "Médico actualizado correctamente.",
+                    estatus = "success",
+                    data = new
+                    {
+                        medico.Id,
+                        medico.Nombre,
+                        medico.Apellido,
+                        medico.Estatus
+                        // Agrega otros campos si es necesario
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "Error interno del servidor.",
+                    estatus = "error",
+                    data = ex.Message
+                });
+            }
+        }
+
+
+
+
     }
 }
