@@ -170,7 +170,6 @@ namespace MediFinder_Backend.Controllers
         }
 
         // Obtener Avatar del Médico -----------------------------------------------------------------------------------------------------------
-
         [HttpGet]
         [Route("ObtenerAvatar/{id}")]
         public async Task<IActionResult> ObtenerAvatar(int id)
@@ -179,7 +178,7 @@ namespace MediFinder_Backend.Controllers
             {
                 var medico = await _baseDatos.Medicos
                     .Where(m => m.Id == id)
-                    .Select(m => new { Avatar = m.Avatar })
+                    .Select(m => m.Avatar)
                     .FirstOrDefaultAsync();
 
                 if (medico == null)
@@ -187,10 +186,11 @@ namespace MediFinder_Backend.Controllers
                     return NotFound("No se encontró imagen del médico especificado.");
                 }
 
-                return Ok(medico.Avatar);
+                return Ok(medico);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error al obtener el avatar: {ex.Message}");
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
