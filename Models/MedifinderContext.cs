@@ -33,6 +33,10 @@ public partial class MedifinderContext : DbContext
 
     public virtual DbSet<ClasificacionComentario> ClasificacionComentarios { get; set; }
 
+    public virtual DbSet<Compra> Compras { get; set; }
+
+    public virtual DbSet<ComprasUsuario> ComprasUsuarios { get; set; }
+
     public virtual DbSet<DiaInhabil> DiaInhabil { get; set; }
 
     public virtual DbSet<Especialidad> Especialidad { get; set; }
@@ -58,6 +62,8 @@ public partial class MedifinderContext : DbContext
     public virtual DbSet<ProductImage> ProductImages { get; set; }
 
     public virtual DbSet<Purchase> Purchases { get; set; }
+
+    public virtual DbSet<SolicitudCompra> SolicitudCompras { get; set; }
 
     public virtual DbSet<Suscripcion> Suscripcion { get; set; }
 
@@ -226,6 +232,54 @@ public partial class MedifinderContext : DbContext
                 .HasMaxLength(100)
                 .IsUnicode(false);
             entity.Property(e => e.Estatus).HasDefaultValue(1);
+        });
+
+        modelBuilder.Entity<Compra>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__compras__3213E83FF3C06B8E");
+
+            entity.ToTable("compras");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Amount).HasColumnName("amount");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.PurchaseDate)
+                .HasColumnType("datetime")
+                .HasColumnName("purchase_date");
+            entity.Property(e => e.Total)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("total");
+            entity.Property(e => e.UnitPrice)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("unit_price");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.Compras)
+                .HasForeignKey(d => d.ProductId)
+                .HasConstraintName("FK_Compras_Productos");
+        });
+
+        modelBuilder.Entity<ComprasUsuario>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__comprasU__3213E83F118C6CB7");
+
+            entity.ToTable("comprasUsuario");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Amount).HasColumnName("amount");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.PurchaseDate)
+                .HasColumnType("datetime")
+                .HasColumnName("purchase_date");
+            entity.Property(e => e.Total)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("total");
+            entity.Property(e => e.UnitPrice)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("unit_price");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ComprasUsuarios)
+                .HasForeignKey(d => d.ProductId)
+                .HasConstraintName("FK_ComprasUsuario_Productos");
         });
 
         modelBuilder.Entity<DiaInhabil>(entity =>
@@ -545,6 +599,30 @@ public partial class MedifinderContext : DbContext
             entity.HasOne(d => d.Product).WithMany(p => p.Purchases)
                 .HasForeignKey(d => d.ProductId)
                 .HasConstraintName("FK_Purchases_Products");
+        });
+
+        modelBuilder.Entity<SolicitudCompra>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__solicitu__3213E83F25038149");
+
+            entity.ToTable("solicitudCompra");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Amount).HasColumnName("amount");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.PurchaseDate)
+                .HasColumnType("datetime")
+                .HasColumnName("purchase_date");
+            entity.Property(e => e.Total)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("total");
+            entity.Property(e => e.UnitPrice)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("unit_price");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.SolicitudCompras)
+                .HasForeignKey(d => d.ProductId)
+                .HasConstraintName("FK_SolicitudCompra_Productos");
         });
 
         modelBuilder.Entity<Suscripcion>(entity =>

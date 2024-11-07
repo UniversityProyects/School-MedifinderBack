@@ -25,7 +25,13 @@ public partial class Product
 
     public string? Thumbnail { get; set; }
 
+    public virtual ICollection<Compra> Compras { get; set; } = new List<Compra>();
+
+    public virtual ICollection<ComprasUsuario> ComprasUsuarios { get; set; } = new List<ComprasUsuario>();
+
     public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
 
     public virtual ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
+
+    public virtual ICollection<SolicitudCompra> SolicitudCompras { get; set; } = new List<SolicitudCompra>();
 }
