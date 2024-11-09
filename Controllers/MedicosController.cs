@@ -329,6 +329,7 @@ namespace MediFinder_Backend.Controllers
                         m.Id,
                         m.Nombre,
                         m.Apellido,
+                        m.Avatar,
                         m.Email,
                         m.Telefono,
                         m.Calle,
@@ -767,5 +768,55 @@ namespace MediFinder_Backend.Controllers
             }
         }
 
+
+        [HttpPost]
+        [Route("SubirAvatar/{idMedico}")]
+        public async Task<IActionResult> SubirAvatar(int idMedico, IFormFile archivo)
+        {
+            try
+            {
+                if (archivo == null || archivo.Length == 0)
+                {
+                    return BadRequest(new { mensaje = "No se ha proporcionado ninguna imagen." });
+                }
+
+                // Verificar si el archivo es de tipo JPG
+                if (!archivo.ContentType.StartsWith("image/jpeg"))
+                {
+                    return BadRequest(new { mensaje = "El archivo debe ser una imagen JPG." });
+                }
+
+                // Leer el archivo y convertirlo a Base64
+                using (var memoryStream = new MemoryStream())
+                {
+                    await archivo.CopyToAsync(memoryStream);
+                    byte[] imageBytes = memoryStream.ToArray();
+                    string base64Image = Convert.ToBase64String(imageBytes);
+
+                    // Buscar al médico por su ID
+                    var medico = await _baseDatos.Medicos.FindAsync(idMedico);
+                    if (medico == null)
+                    {
+                        return NotFound(new { mensaje = "Médico no encontrado." });
+                    }
+
+                    // Actualizar el campo Avatar con la imagen en Base64
+                    medico.Avatar = base64Image;
+
+                    // Guardar los cambios en la base de datos
+                    await _baseDatos.SaveChangesAsync();
+
+                    return Ok(new { mensaje = "Avatar actualizado con éxito." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+
     }
+
+
 }
