@@ -123,7 +123,7 @@ namespace MediFinder_Backend.Controllers
                 });
             }
             decimal total = (producto.Price ?? 0) * dtoCompra.Amount;
-            DateTime fechaCompra = DateTime.UtcNow;
+            DateTime fechaCompra = DateTime.UtcNow.ToLocalTime();
 
             var nuevaCompra = new ComprasUsuario
             {
@@ -173,17 +173,17 @@ namespace MediFinder_Backend.Controllers
         {
             try
             {
-                var compras = await (from c in _baseDatos.Compras
+                var compras = await (from c in _baseDatos.ComprasUsuarios
                                      join p in _baseDatos.Products on c.ProductId equals p.Id
                                      select new
                                      {
-                                         c.Id,
-                                         c.ProductId,
-                                         c.Amount,
-                                         c.PurchaseDate,
-                                         c.UnitPrice,
-                                         c.Total,
-                                         ProductName = p.Title
+                                         Id = c.Id,
+                                         IdProducto = c.ProductId,
+                                         Cantidad = c.Amount,
+                                         Fecha = c.PurchaseDate.HasValue ? c.PurchaseDate.Value.ToString("dd/MM/yyyy") : null,
+                                         Costo = c.UnitPrice,
+                                         TotalCompra =  c.Total,
+                                         NombreProducto = p.Title
                                      }).ToListAsync();
 
                 if (compras == null)
