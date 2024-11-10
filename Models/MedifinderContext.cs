@@ -584,7 +584,7 @@ public partial class MedifinderContext : DbContext
             entity.ToTable("purchases");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Amount).HasColumnName("amount");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.PurchaseDate)
                 .HasColumnType("datetime")
@@ -595,6 +595,12 @@ public partial class MedifinderContext : DbContext
             entity.Property(e => e.UnitPrice)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("unit_price");
+            entity.Property(e => e.discountPercentage)
+                .HasColumnType("decimal(5, 2)")
+                .HasColumnName("discountPercentage");
+            entity.Property(e => e.totalWithDiscount)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("totalWithDiscount");
 
             entity.HasOne(d => d.Product).WithMany(p => p.Purchases)
                 .HasForeignKey(d => d.ProductId)
