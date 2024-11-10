@@ -600,7 +600,7 @@ public partial class MedifinderContext : DbContext
                 .HasColumnType("decimal(5, 2)")
                 .HasColumnName("discountPercentage");
             entity.Property(e => e.totalWithDiscount)
-                .HasColumnType("decimal(18, 2)")
+                .HasColumnType("decimal(10, 2)")
                 .HasColumnName("totalWithDiscount");
 
             entity.HasOne(d => d.Product).WithMany(p => p.Purchases)

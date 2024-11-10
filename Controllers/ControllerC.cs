@@ -64,7 +64,7 @@ namespace MediFinder_Backend.Controllers
                                         p.Thumbnail,
                                         Images = _baseDatos.ProductImages
                                                            .Where(img => img.ProductId == p.Id)
-                                                           .Select(img => img.ImageUrl)
+                                                           .Select(img => img.ImageUrl).ToList()
                                     })
                                     .FirstOrDefault();
 

@@ -9,13 +9,16 @@ public partial class Purchase
 
     public int? ProductId { get; set; }
 
-    public int? Amount { get; set; }
+    public int? Quantity { get; set; }
 
     public DateTime? PurchaseDate { get; set; }
 
     public decimal? UnitPrice { get; set; }
 
     public decimal? Total { get; set; }
+    public decimal discountPercentage { get; set; }
+
+    public decimal totalWithDiscount { get; set; }
 
     public virtual Product? Product { get; set; }
 }
