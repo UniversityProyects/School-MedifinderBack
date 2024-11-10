@@ -14,6 +14,7 @@ public partial class MedifinderContext : DbContext
         : base(options)
     {
     }
+    public DbSet<SolicitudCompra> SolicitudCompra { get; set; }  
 
     public virtual DbSet<Administrador> Administrador { get; set; }
 
