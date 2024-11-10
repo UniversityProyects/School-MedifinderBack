@@ -125,6 +125,25 @@ namespace MediFinder_Backend.Controllers
 
             return Ok(sales);
         }
+        // Nuevo Endpoint: Obtener todos los productos
+        [HttpGet]
+        [Route("allProducts")]
+        public IActionResult GetAllProducts()
+        {
+            var products = _baseDatos.Products
+                                     .Select(p => new
+                                     {
+                                         p.Id,
+                                         p.Title,
+                                         p.Description,
+                                         p.Price,
+                                         p.Stock,
+                                         p.Thumbnail
+                                     })
+                                     .ToList();
+
+            return Ok(products);
+        }
 
         // Clase de solicitud de compra
         public class PurchaseRequest
@@ -133,4 +152,6 @@ namespace MediFinder_Backend.Controllers
             public int Amount { get; set; }
         }
     }
+
+
 }
