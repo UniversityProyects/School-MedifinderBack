@@ -302,7 +302,7 @@ namespace MediFinder_Backend.Controllers
             {
                 var listaMedicos = await _baseDatos.Medicos
                     .Include(m => m.EspecialidadMedicoIntermedia)
-                    .ThenInclude(em => em.IdEspecialidadNavigation) 
+                    .ThenInclude(em => em.IdEspecialidadNavigation)
                     .ToListAsync();
 
                 var listaMedicosDTO = listaMedicos.Select(m => new
@@ -318,24 +318,36 @@ namespace MediFinder_Backend.Controllers
                     m.Ciudad,
                     m.Pais,
                     m.CodigoPostal,
-                    m.Estatus, 
-                    FechaRegistro = m.FechaRegistro?.ToString("yyyy-MM-dd HH:mm:ss"), 
+                    m.Estatus,
+                    FechaRegistro = m.FechaRegistro?.ToString("yyyy-MM-dd HH:mm:ss"),
                     Especialidades = m.EspecialidadMedicoIntermedia.Select(em => new
                     {
                         em.IdEspecialidad,
                         em.NumCedula,
                         em.Honorarios,
-                        Especialidad = em.IdEspecialidadNavigation?.Nombre 
+                        Especialidad = em.IdEspecialidadNavigation?.Nombre
                     })
                 });
 
-                return Ok(listaMedicosDTO);
+                return Ok(new
+                {
+                    estatus = "success",
+                    mensaje = "Médicos obtenidos exitosamente.",
+                    data = listaMedicosDTO
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+                return StatusCode(500, new
+                {
+                    estatus = "error",
+                    mensaje = "Error interno del servidor.",
+                    data = (object)null,
+                    error = ex.Message
+                });
             }
         }
+
 
         // Obtener Lista de Médicos Registrados ---------------------------------------------------------------------------------------
         [HttpGet]
