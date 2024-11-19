@@ -356,6 +356,7 @@ namespace MediFinder_Backend.Controllers
             {
                 var medicosEncontrados = await _baseDatos.Medicos
                     .Where(m => m.Nombre.Contains(termino) || m.Apellido.Contains(termino))
+                    .Take(5)
                     .Select(m => new
                     {
                         m.Id,
