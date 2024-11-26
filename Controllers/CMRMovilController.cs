@@ -34,6 +34,7 @@ namespace MediFinder_Backend.Controllers
                     from c in citas.DefaultIfEmpty()
                     join cm in _baseDatos.CalificacionMedicos on c.Id equals cm.IdCita into calificaciones
                     from cm in calificaciones.DefaultIfEmpty()
+                    where med.Estatus != "1"
                     group new { cm, med } by new { med.Id, med.Nombre, med.Apellido } into grouped
                     select new
                     {
@@ -337,6 +338,7 @@ namespace MediFinder_Backend.Controllers
                 var resultados = from m in _baseDatos.Medicos
                         join s in _baseDatos.Suscripcion on m.Id equals s.IdMedico into suscripcionesGroup
                         from s in suscripcionesGroup.DefaultIfEmpty() // LEFT JOIN
+                        where m.Estatus != "1"
                         group s by new { m.Id, m.Nombre, m.Apellido, m.Estatus } into grouped
                         select new
                         {
@@ -499,10 +501,10 @@ namespace MediFinder_Backend.Controllers
                 // Crea un nuevo administrador
                 var administradorNuevo = new Administrador
                 {
-                    Nombre = administradorDTO.Nombre,
-                    Apellido = administradorDTO.Apellido,
-                    Email = administradorDTO.Email,
-                    Contrasena = administradorDTO.Contrasena,
+                    Nombre = administradorDTO.Nombre.Trim(),
+                    Apellido = administradorDTO.Apellido.Trim(),
+                    Email = administradorDTO.Email.Trim(),
+                    Contrasena = administradorDTO.Contrasena.Trim(),
                     Estatus = "0"
                 };
 
@@ -543,7 +545,7 @@ namespace MediFinder_Backend.Controllers
 
                 if (administrador.Estatus == "0")
                 {
-                    return Unauthorized(new { CodigoError = 401, mensaje = "Credenciales ." });
+                    return Unauthorized(new { CodigoError = 401, mensaje = "Usuario sin autorización" });
                 }
 
                 // Retornar los datos necesarios para el almacenamiento en localStorage
@@ -773,7 +775,7 @@ namespace MediFinder_Backend.Controllers
                 var listaMedicos = await _baseDatos.Medicos
                     .Include(m => m.EspecialidadMedicoIntermedia)
                     .ThenInclude(em => em.IdEspecialidadNavigation)
-                    .Where(m => m.Estatus != "3") // Asegúrate de que Estatus es un string
+                    .Where(m => m.Estatus == "1") // Asegúrate de que Estatus es un string
                     .ToListAsync();
 
                 var listaMedicosDTO = listaMedicos.Select(m => new
