@@ -17,6 +17,10 @@ public partial class MedifinderContext : DbContext
 
     public virtual DbSet<Administrador> Administrador { get; set; }
 
+    public virtual DbSet<AdministradorMedicoAutorizado> AdministradorMedicoAutorizado { get; set; }
+
+    public virtual DbSet<AdministradorRol> AdministradorRol { get; set; }
+
     public virtual DbSet<Buzon> Buzons { get; set; }
 
     public virtual DbSet<BuzonClasificacionComentario> BuzonClasificacionComentarios { get; set; }
@@ -35,6 +39,8 @@ public partial class MedifinderContext : DbContext
 
     public virtual DbSet<EspecialidadMedicoIntermedium> EspecialidadMedicoIntermedia { get; set; }
 
+    public virtual DbSet<Historial> Historial { get; set; }
+
     public virtual DbSet<HistorialClinico> HistorialClinico { get; set; }
 
     public virtual DbSet<Horario> Horarios { get; set; }
@@ -42,6 +48,8 @@ public partial class MedifinderContext : DbContext
     public virtual DbSet<Indicacione> Indicaciones { get; set; }
 
     public virtual DbSet<Medico> Medicos { get; set; }
+
+    public virtual DbSet<MedioContacto> MedioContactos { get; set; }
 
     public virtual DbSet<Paciente> Paciente { get; set; }
 
@@ -82,6 +90,43 @@ public partial class MedifinderContext : DbContext
             entity.Property(e => e.Nombre)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<AdministradorMedicoAutorizado>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Administ__3213E83FE09066BE");
+
+            entity.ToTable("AdministradorMedicoAutorizado");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Estatus)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.Property(e => e.HoraModifica).HasPrecision(0);
+            entity.Property(e => e.IdAdministrador).HasColumnName("idAdministrador");
+
+            entity.HasOne(d => d.IdAdministradorNavigation).WithMany(p => p.AdministradorMedicoAutorizados)
+                .HasForeignKey(d => d.IdAdministrador)
+                .HasConstraintName("FK_Administrador");
+
+            entity.HasOne(d => d.IdMedicoNavigation).WithMany(p => p.AdministradorMedicoAutorizados)
+                .HasForeignKey(d => d.IdMedico)
+                .HasConstraintName("FK_Medico");
+        });
+
+        modelBuilder.Entity<AdministradorRol>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Administ__3213E83F7631D05F");
+
+            entity.ToTable("AdministradorRol");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.EsAdminMaestro).HasColumnName("esAdminMaestro");
+            entity.Property(e => e.IdAdministrador).HasColumnName("idAdministrador");
+
+            entity.HasOne(d => d.IdAdministradorNavigation).WithMany(p => p.AdministradorRols)
+                .HasForeignKey(d => d.IdAdministrador)
+                .HasConstraintName("FK_AdministradorRol");
         });
 
         modelBuilder.Entity<Buzon>(entity =>
@@ -236,6 +281,25 @@ public partial class MedifinderContext : DbContext
                 .HasConstraintName("FK_Medico_Intermedia");
         });
 
+        modelBuilder.Entity<Historial>(entity =>
+        {
+            entity.HasKey(e => e.IdHistorial).HasName("PK__Historia__9CC7DBB4CB7F57F4");
+
+            entity.ToTable("Historial");
+
+            entity.HasOne(d => d.IdAdministradorNavigation).WithMany(p => p.Historials)
+                .HasForeignKey(d => d.IdAdministrador)
+                .HasConstraintName("FK__Historial__IdAdm__09746778");
+
+            entity.HasOne(d => d.IdMedicoNavigation).WithMany(p => p.Historials)
+                .HasForeignKey(d => d.IdMedico)
+                .HasConstraintName("FK__Historial__IdMed__0880433F");
+
+            entity.HasOne(d => d.IdMedioContactoNavigation).WithMany(p => p.Historials)
+                .HasForeignKey(d => d.IdMedioContacto)
+                .HasConstraintName("FK__Historial__IdMed__0A688BB1");
+        });
+
         modelBuilder.Entity<HistorialClinico>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Historia__3214EC0732D59257");
@@ -354,6 +418,15 @@ public partial class MedifinderContext : DbContext
             entity.Property(e => e.Telefono)
                 .HasMaxLength(20)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<MedioContacto>(entity =>
+        {
+            entity.HasKey(e => e.IdMedioContacto).HasName("PK__MedioCon__3E86CE3C53EBF0E2");
+
+            entity.ToTable("MedioContacto");
+
+            entity.Property(e => e.Descripcion).HasMaxLength(255);
         });
 
         modelBuilder.Entity<Paciente>(entity =>

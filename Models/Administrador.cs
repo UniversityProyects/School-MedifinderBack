@@ -16,4 +16,10 @@ public partial class Administrador
     public string? Contrasena { get; set; }
 
     public string? Estatus { get; set; }
+
+    public virtual ICollection<AdministradorMedicoAutorizado> AdministradorMedicoAutorizados { get; set; } = new List<AdministradorMedicoAutorizado>();
+
+    public virtual ICollection<AdministradorRol> AdministradorRols { get; set; } = new List<AdministradorRol>();
+
+    public virtual ICollection<Historial> Historials { get; set; } = new List<Historial>();
 }

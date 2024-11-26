@@ -39,11 +39,15 @@ public partial class Medico
 
     public string? Avatar { get; set; }
 
+    public virtual ICollection<AdministradorMedicoAutorizado> AdministradorMedicoAutorizados { get; set; } = new List<AdministradorMedicoAutorizado>();
+
     public virtual ICollection<Citum> Cita { get; set; } = new List<Citum>();
 
     public virtual ICollection<DiaInhabil> DiaInhabils { get; set; } = new List<DiaInhabil>();
 
     public virtual ICollection<EspecialidadMedicoIntermedium> EspecialidadMedicoIntermedia { get; set; } = new List<EspecialidadMedicoIntermedium>();
+
+    public virtual ICollection<Historial> Historials { get; set; } = new List<Historial>();
 
     public virtual ICollection<Horario> Horarios { get; set; } = new List<Horario>();
 
