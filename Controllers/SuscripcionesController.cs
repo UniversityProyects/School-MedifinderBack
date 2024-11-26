@@ -24,7 +24,7 @@ namespace MediFinder_Backend.Controllers
         [Route("RegistrarSuscripcion")]
         public async Task<IActionResult> RegistrarSuscripcion([FromBody] SuscripcionDTO suscripcionDTO)
         {
-            //Valida que el modelo recibido este correcto
+            // Valida que el modelo recibido este correcto
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -32,51 +32,52 @@ namespace MediFinder_Backend.Controllers
 
             try
             {
-                //Verificar si existe la suscripcion que se va a pagar
-                var existeTipoSuscripcion = await _baseDatos.TipoSuscripcion
+                // Verificar si el tipo de suscripción existe
+                var tipoSuscripcion = await _baseDatos.TipoSuscripcion
                     .FirstOrDefaultAsync(ts => ts.Id == suscripcionDTO.IdTipoSuscripcion);
 
-                if (existeTipoSuscripcion == null)
+                if (tipoSuscripcion == null)
                 {
-                    return NotFound($"El tipo de suscripcion recibida no existe");
+                    return NotFound("El tipo de suscripción no existe.");
                 }
 
-                //Verificar el medico exista
-                var existeMedico = await _baseDatos.Medicos
+                // Verificar si el médico existe
+                var medico = await _baseDatos.Medicos
                     .FirstOrDefaultAsync(m => m.Id == suscripcionDTO.IdMedico);
 
-                if (existeMedico == null)
+                if (medico == null)
                 {
-                    return BadRequest($"No se encontró ningún registro del médico recibido.");
-                }
-                if (existeMedico.Estatus == "1")
-                {
-                    return BadRequest($"No se puede registrar la suscripcion porque el médico tiene pendiente su validación");
-                }
-                if (existeMedico.Estatus == "4")
-                {
-                    return BadRequest($"No se puede registrar la suscripcion porque el médico esta inactivo");
+                    return BadRequest("No se encontró ningún registro del médico proporcionado.");
                 }
 
-                // Cambiar el estatus de todas las suscripciones del médico a "0"
-                var suscripcionesExistentes = await _baseDatos.Suscripcion
+                if (medico.Estatus == "1")
+                {
+                    return BadRequest("No se puede registrar la suscripción porque el médico tiene pendiente su validación.");
+                }
+
+                if (medico.Estatus == "4")
+                {
+                    return BadRequest("No se puede registrar la suscripción porque el médico está inactivo.");
+                }
+
+                // Cambiar el estatus de todas las suscripciones previas del médico a "0"
+                var suscripcionesPrevias = await _baseDatos.Suscripcion
                     .Where(s => s.IdMedico == suscripcionDTO.IdMedico && s.Estatus == "1")
                     .ToListAsync();
 
-                foreach (var suscripcion in suscripcionesExistentes)
+                foreach (var suscripcion in suscripcionesPrevias)
                 {
                     suscripcion.Estatus = "0";
                 }
 
-                // Guardar los cambios en la base de datos
                 await _baseDatos.SaveChangesAsync();
 
+                // Calcular fechas de inicio y fin
                 var fechaInicio = DateTime.Now;
-                // Calculamos la fecha de finalización agregando los meses correspondientes
-                var fechaFin = fechaInicio.AddMonths(existeTipoSuscripcion.Duracion ?? 0);
+                var fechaFin = fechaInicio.AddMonths(tipoSuscripcion.Duracion ?? 0);
 
-                //Formateamos el nuevo registros
-                var suscripcionNueva = new Suscripcion
+                // Crear y registrar nueva suscripción
+                var nuevaSuscripcion = new Suscripcion
                 {
                     IdTipoSuscripcion = suscripcionDTO.IdTipoSuscripcion,
                     IdMedico = suscripcionDTO.IdMedico,
@@ -85,11 +86,21 @@ namespace MediFinder_Backend.Controllers
                     FechaFin = DateOnly.FromDateTime(fechaFin)
                 };
 
-                //Guardamos en la Bd
-                _baseDatos.Suscripcion.Add(suscripcionNueva);
+                _baseDatos.Suscripcion.Add(nuevaSuscripcion);
                 await _baseDatos.SaveChangesAsync();
 
-                return Ok(new { message = "La suscripción ha sido registrada exitosamente." });
+                // Registrar pago correspondiente
+                var nuevoPago = new PagoSuscripcion
+                {
+                    IdSuscripcion = nuevaSuscripcion.Id, // ID generado al guardar la suscripción
+                    Monto = tipoSuscripcion.Precio ?? 0,
+                    FechaPago = DateOnly.FromDateTime(fechaInicio)
+                };
+
+                _baseDatos.PagoSuscripcion.Add(nuevoPago);
+                await _baseDatos.SaveChangesAsync();
+
+                return Ok(new { message = "La suscripción y el pago se registraron exitosamente." });
             }
             catch (Exception ex)
             {
