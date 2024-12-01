@@ -695,5 +695,35 @@ namespace MediFinder_Backend.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("ObtenerListadoPacientes")]
+        public async Task<IActionResult> ObtenerPacientes()
+        {
+            try
+            {
+                // Obtener todos los pacientes sin aplicar ningún filtro
+                var pacientes = await _baseDatos.Paciente
+                    .Select(p => new
+                    {
+                        p.Id,
+                        p.Nombre,
+                        p.Apellido,
+                        p.Email,
+                        p.Telefono,
+                        p.FechaNacimiento,
+                        p.Sexo,
+                        p.Estatus
+                    }).ToListAsync();
+
+                return Ok(pacientes);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
+        }
+
+
+
     }
 }
