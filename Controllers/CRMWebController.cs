@@ -637,14 +637,6 @@ namespace MediFinder_Backend.Controllers
             }
         }
 
-
-
-
-
-
-
-
-
         //Metodo para verificar si no hay un administrador con la informacion ta registrada en la bd
         private async Task<System.Boolean> ExisteAdministrador(string nombre, string apellido, string email)
         {
@@ -657,6 +649,50 @@ namespace MediFinder_Backend.Controllers
 
             }
             return false;
+        }
+
+        // NUMERO DE MEDICOS Y PACIENTES --------------------------------------------------------
+        [HttpGet]
+        [Route("ContarMedicosYPacientes")]
+        public async Task<IActionResult> ContarMedicosYPacientes()
+        {
+            try
+            {
+                // Definimos un diccionario para mapear el estatus a su tipo
+                var estatusTipos = new Dictionary<string, string>
+        {
+            { "1", "Registro nuevo" },
+            { "2", "Sin Suscripción" },
+            { "3", "Activo" },
+            { "4", "Baja" }
+        };
+
+                // Contar médicos por estatus
+                var medicosPorEstatus = await _baseDatos.Medicos
+                    .GroupBy(m => m.Estatus)
+                    .Select(g => new
+                    {
+                        Estatus = g.Key,
+                        Tipo = estatusTipos[g.Key], // Asignar el tipo basado en el diccionario
+                        Cantidad = g.Count()
+                    }).ToListAsync();
+
+                // Contar total de pacientes
+                var totalPacientes = await _baseDatos.Paciente.CountAsync();
+
+                // Formatear la respuesta
+                var resultado = new
+                {
+                    MedicosPorEstatus = medicosPorEstatus,
+                    TotalPacientes = totalPacientes
+                };
+
+                return Ok(resultado);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = $"Error interno del servidor: {ex.Message}" });
+            }
         }
 
     }

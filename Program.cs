@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MediFinder_Backend.Models;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,4 +37,7 @@ app.UseCors("NuevaPolitica");
 app.UseAuthorization();
 app.MapControllers();
 
+// var host = "http://192.168.124.75:5257";
+
+// app.Run(host);
 app.Run();
